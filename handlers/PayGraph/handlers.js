@@ -32,7 +32,7 @@ async function Annuity(credit, percent, equal, id, time, client, dates){
                                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                     values: [id, equal - fact_percent, (percent - 1) * 100, fact_percent, date],
                 }
-                const {rows} = await client.query(query)
+                await client.query(query)
                 data = {
                     message: 'complete',
                 }
@@ -72,7 +72,7 @@ async function Diff(credit, percent, dif, time, id, client, dates){
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                     values: [id, dif, (percent - 1) * 100, date, fact_percent],
                 }
-                let {rows} = await client.query(query)
+                await client.query(query)
                 data = {
                     message: 'complete',
                 }
@@ -111,14 +111,14 @@ async function LastPay(credits, percent, time, id, client, dates){
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                         values: [id, credits, (percent - 1) * 100, fact_percent, date]
                     }
-                    const {rows} = await client.query(query)
+                    await client.query(query)
                 } else {
                     const query = {
                         text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                         values: [id, 0, (percent - 1) * 100, fact_percent, date]
                     }
-                    const {rows} = await client.query(query)
+                    await client.query(query)
                 }
 
                 data = {
