@@ -15,18 +15,10 @@ const getGraph = {
                         type: 'string',
                         format: 'uuid'
                     },
-                    credit: {
-                        type: 'number',
-                    },
-                    percent_rate: {
-                        type: 'number'
-                    },
-                    accrued_percent:{
-                        type: 'number'
-                    },
-                    date:{
-                        type:'string'
-                    }
+                    credit: {type: 'number'},
+                    percent_rate: {type: 'number'},
+                    accrued_percent: {type: 'number'},
+                    date: {type:'string'}
                 }
             }
         }
@@ -37,18 +29,10 @@ const postGraph = {
     body:{
         type: 'object',
         properties: {
-            credit: {
-                type: 'number'
-            },
-            percent: {
-                type: 'number'
-            },
-            time: {
-                type: 'number'
-            },
-            credit_date:{
-                type: 'string',
-            },
+            credit: {type: 'number'},
+            percent: {type: 'number'},
+            time: {type: 'number'},
+            credit_date: {type: 'string'},
             typed:{
                 type: 'string',
                 nullable: true,
