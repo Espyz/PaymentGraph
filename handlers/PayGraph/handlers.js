@@ -191,19 +191,30 @@ async function handlerget3(client, id){
 }
 
 async function handlerpost(client, request){
-    const {credit, percent, time, credit_date, id} = request.body
-    console.log({credit, percent, time, credit_date, id})
+    const {credit, percent, time, credit_date, typed, id} = request.body
+    console.log({credit, percent, time, credit_date, typed, id})
     let work_percent = 1 + (+percent/12/100)
     let equal = Math.ceil((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
     let dif = Math.ceil(credit / time)
     let payout = {message: []}
     console.log(equal)
-    payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
-    payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
-    payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
-
-    if (payout.message[1] !== [] && payout.message[2] !== [] && payout.message[0] !== []){
+    if (id === null){
+        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
+        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
+        payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
+    } else if (typed === 'ann') {
+        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
+    } else if (typed === 'dif'){
+        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
+    } else if (typed === 'last'){
+        payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
+    } else{
+        payout.message.push('Payment type not selected')
+    }
+    if ((payout.message[1] !== [] && payout.message[2] !== [] && payout.message[0] !== [] && id === null) || (payout.message[0] !== 'Payment type not selected' && id !== null)){
         payout.statusCode = 200
+    } else if (payout.message[0] === 'Payment type not selected'){
+        payout.statusCode = 302
     } else {
         payout.statusCode = 400
     }

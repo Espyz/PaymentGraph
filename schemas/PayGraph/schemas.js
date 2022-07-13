@@ -49,6 +49,11 @@ const postGraph = {
             credit_date:{
                 type: 'string',
             },
+            typed:{
+                type: 'string',
+                nullable: true,
+                default: null
+            },
             id:{
                 type: 'string',
                 nullable: true,
