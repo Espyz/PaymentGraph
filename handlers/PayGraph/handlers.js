@@ -196,13 +196,6 @@ async function handlerpost(client, request){
     let equal = Math.ceil((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
     let dif = Math.ceil(credit / time)
     let payout = {message: []}
-    // if (time>credit){
-    //     payout.message.push([0,0,'idi nahuy dolbayob'])
-    //     payout.message.push([0,0,'idi nahuy dolbayob'])
-    //     payout.message.push([0,0,'idi nahuy dolbayob'])
-    //     payout.statusCode = 200
-    //     return payout
-    // }
     if (id === null){
         payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
         payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
