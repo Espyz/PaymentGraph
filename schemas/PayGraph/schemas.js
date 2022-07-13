@@ -56,6 +56,13 @@ const postGraph = {
                 statusCode: {type: 'integer'}
             }
         },
+        302:{
+            type: 'object',
+            properties: {
+                message:{type: 'string'},
+                statusCode: {type: 'integer'}
+            }
+        },
         400:{
             type:'object',
             properties:{

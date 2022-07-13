@@ -37,7 +37,7 @@ async function routes(fastify, options){
 
         let data = await graph.handlerpost(client, request)
         console.log('zaebal')
-        if (data.statusCode !== 200) {
+        if (data.statusCode !== 200 || data.statusCode !== 302) {
             reply.status(400);
         } else {
             reply.send(data)
