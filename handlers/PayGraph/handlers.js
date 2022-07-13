@@ -64,7 +64,6 @@ async function Diff(credit, percent, dif, time, id, client, dates){
         }
         date = dates.toISOString()
         fact_percent = Math.ceil(credit * (percents-1))
-        console.log(credit)
         try {
             if (id !== null) {
                 let query = {
@@ -195,7 +194,7 @@ async function handlerpost(client, request){
     console.log({credit, percent, time, credit_date, typed, id})
     let work_percent = 1 + (+percent/12/100)
     let equal = Math.ceil((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
-    let dif = Math.round(credit / time)
+    let dif = Math.ceil(credit / time)
     let payout = {message: []}
     // if (time>credit){
     //     payout.message.push([0,0,'idi nahuy dolbayob'])
@@ -204,7 +203,6 @@ async function handlerpost(client, request){
     //     payout.statusCode = 200
     //     return payout
     // }
-    console.log(dif)
     if (id === null){
         payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
         payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
