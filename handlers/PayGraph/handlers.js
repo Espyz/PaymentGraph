@@ -8,41 +8,59 @@ async function testDate(date){
 }
 
 async function Annuity(credit, percent, equal, id, time, client, dates){
-    let fact_percent, date, percents
+    let fact_percent, date, percents, this_equal
     let data = {
         message: [],
     }
-
     for (let i = 1; i <= time; i++) {
-
+        this_equal = equal
         dates.setMonth(dates.getMonth() + 1)
         percents = percent
-        while (await testDate(dates)) {
-            dates.setDate(dates.getDate() + 1)
-            percents = (percent - 1) / 30 + percent
+        // while (await testDate(dates)) {
+        //     dates.setDate(dates.getDate() + 1)
+        //     percents += (percent - 1) / 30
+        // }
+        if (percent !== percents){
+            this_equal = null
         }
-
         date = dates.toISOString()
         fact_percent = Math.round(credit * (percents - 1))
-
-        try {
+        if (i < time) {
+            try {
+                if (id !== null) {
+                    const query = {
+                        text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
+                                            VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                        values: [id, this_equal - fact_percent, (percent - 1) * 100, fact_percent, date],
+                    }
+                    await client.query(query)
+                    data = {
+                        message: 'complete',
+                    }
+                } else {
+                    data.message.push([this_equal - fact_percent, fact_percent, date])
+                }
+            } catch (err) {
+            }
+            credit = Math.round(credit * percents) - this_equal
+        } else {
             if (id !== null) {
+                credit = Math.round(credit * percents) - this_equal
                 const query = {
                     text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
                                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    values: [id, equal - fact_percent, (percent - 1) * 100, fact_percent, date],
+                    values: [id, this_equal - fact_percent + credit, (percent - 1) * 100, fact_percent - credit, date],
                 }
                 await client.query(query)
                 data = {
                     message: 'complete',
                 }
-            } else {
-                data.message.push([equal - fact_percent, fact_percent, date])
-            }
-        } catch (err) {}
-
-        credit = Math.ceil(credit * percents) - equal
-
+            }else {
+                    credit = Math.round(credit * percents) - this_equal
+                    data.message.push([this_equal - fact_percent + credit, fact_percent - credit, date])
+                }
+        }
+        console.log(credit, ' ', fact_percent, ' ', this_equal)
     }
     return data
 }
@@ -53,7 +71,7 @@ async function Diff(credit, percent, dif, time, id, client, dates){
         message: [],
     }
 
-    for (let i = 1; i <= time; i++){
+    for (let i = 0; i < time; i++){
 
         dates.setMonth(dates.getMonth() + 1)
         percents = percent
@@ -63,7 +81,7 @@ async function Diff(credit, percent, dif, time, id, client, dates){
             percents = (percent - 1) / 30 + percent
         }
         date = dates.toISOString()
-        fact_percent = Math.ceil(credit * (percents-1))
+        fact_percent = Math.round(credit * (percents-1))
         try {
             if (id !== null) {
                 let query = {
@@ -90,7 +108,7 @@ async function LastPay(credits, percent, time, id, client, dates){
         message: [],
     }
     let credit = credits
-    for (let i = 1; i <= time; i++){
+    for (let i = 0; i < time; i++){
 
         dates.setMonth(dates.getMonth() + 1)
         percents = percent
@@ -192,8 +210,11 @@ async function handlerget3(client, id){
 async function handlerpost(client, request){
     const {credit, percent, time, credit_date, typed, id} = request.body
     console.log({credit, percent, time, credit_date, typed, id})
-    let work_percent = 1 + (+percent/12/100)
-    let equal = Math.ceil((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
+    let work_percent = (1+ percent/100) ** (1/12)
+    console.log(work_percent)
+    // let equal = Math.ceil(((((1+(percent/100))**(1/12))**time) / (((1+(percent/100))**(1/12))**time - 1)) * (((1+(percent/100))**(1/12)) - 1) * credit)
+    let equal = Math.round(credit * (((work_percent - 1) * (work_percent ** time)) / ((work_percent ** time )- 1)))
+    console.log(equal)
     let dif = Math.ceil(credit / time)
     let payout = {message: []}
     if (id === null){
@@ -216,7 +237,6 @@ async function handlerpost(client, request){
     } else {
         payout.statusCode = 400
     }
-
     console.log(payout)
 
     return payout
