@@ -210,10 +210,12 @@ async function handlerget3(client, id){
 async function handlerpost(client, request){
     const {credit, percent, time, credit_date, typed, id} = request.body
     console.log({credit, percent, time, credit_date, typed, id})
-    let work_percent = (1+ percent/100) ** (1/12)
+    // let work_percent = (1+ percent/100) ** (1/12)
+    let work_percent = 1 + (+percent/12/100)
+    let equal = Math.round((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
     console.log(work_percent)
     // let equal = Math.ceil(((((1+(percent/100))**(1/12))**time) / (((1+(percent/100))**(1/12))**time - 1)) * (((1+(percent/100))**(1/12)) - 1) * credit)
-    let equal = Math.round(credit * (((work_percent - 1) * (work_percent ** time)) / ((work_percent ** time )- 1)))
+    // let equal = Math.round(credit * (((work_percent - 1) * (work_percent ** time)) / ((work_percent ** time )- 1)))
     console.log(equal)
     let dif = Math.ceil(credit / time)
     let payout = {message: []}
