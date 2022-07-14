@@ -16,13 +16,13 @@ async function Annuity(credit, percent, equal, id, time, client, dates){
         this_equal = equal
         dates.setMonth(dates.getMonth() + 1)
         percents = percent
-        // while (await testDate(dates)) {
-        //     dates.setDate(dates.getDate() + 1)
-        //     percents += (percent - 1) / 30
-        // }
-        if (percent !== percents){
-            this_equal = null
+        while (await testDate(dates)) {
+            dates.setDate(dates.getDate() + 1)
+            percents += (percent - 1) / 30
         }
+        // if (percent !== percents){
+        //     this_equal = null
+        // }
         date = dates.toISOString()
         fact_percent = Math.round(credit * (percents - 1))
         if (i < time) {
@@ -57,7 +57,7 @@ async function Annuity(credit, percent, equal, id, time, client, dates){
                 }
             }else {
                     credit = Math.round(credit * percents) - this_equal
-                    data.message.push([this_equal - fact_percent + credit, fact_percent - credit, date])
+                    data.message.push([this_equal - fact_percent + credit, fact_percent, date])
                 }
         }
         console.log(credit, ' ', fact_percent, ' ', this_equal)
