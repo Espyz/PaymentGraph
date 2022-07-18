@@ -11,24 +11,24 @@ async function Remainder(credit, time, data){
     if (credits > 0) {
         if (credit * 100 > time) {
             for (let i = 0; i < time; i++) {
-                credits = +(+credits - +0.01).toFixed(2)
+                credits = +(+credits - 0.01).toFixed(2)
                 data.message[i][0] = +(data.message[i][0] + 0.01).toFixed(2)
             }
         } else {
             for (let i = 0; i < credit * 100; i++) {
-                credits = +(+credits - +0.01).toFixed(2)
+                credits = +(+credits - 0.01).toFixed(2)
                 data.message[i][0] = +(data.message[i][0] + 0.01).toFixed(2)
             }
         }
     } else {
         if ( -(credit * 100) > time) {
             for (let i = time - 1; i >= 0; i--) {
-                credits = +(+credits + +0.01).toFixed(2)
+                credits = +(+credits + 0.01).toFixed(2)
                 data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
             }
         } else {
-            for (let i = (-(credit * 100)) - 1; i >= 0; i--) {
-                credits = +(+credits + +0.01).toFixed(2)
+            for (let i = ((-(credit * 100)) - 1).toFixed(); i >= 0; i--) {
+                credits = +(+credits + 0.01).toFixed(2)
                 data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
             }
         }
@@ -85,17 +85,17 @@ async function Annuity(credit, percent, equal, id, time, client, dates, credits)
                 data = {
                     message: 'complete',
                 }
-            }else {
-                    // credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                    // data.message.push([this_equal - fact_percent, fact_percent , date], [credit, 0, date])
+            } else {
+                // credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
+                // data.message.push([this_equal - fact_percent, fact_percent , date], [credit, 0, date])
                 // data.message.push([credit, +(equal-credit).toFixed(2), date])
                 // credit = 0
                 credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent , date])
-                while (credit !== 0){
+                data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent, date])
+                while (credit !== 0) {
                     credit = await Remainder(credit, time, data)
                 }
-                }
+            }
         }
         // console.log(i)
     }
