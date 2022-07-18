@@ -34,9 +34,7 @@ async function routes(fastify, options){
         }
     })
     fastify.post('/graph', {schema: postGraph}, async function(request, reply) {
-
         let data = await graph.handlerpost(client, request)
-
         if (data.statusCode !== 200 && data.statusCode !== 302) {
             reply.status(400);
         } else {
