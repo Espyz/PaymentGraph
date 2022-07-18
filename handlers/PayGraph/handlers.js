@@ -36,7 +36,7 @@ async function Remainder(credit, time, data){
     return credits
 }
 
-async function Annuity(credit, percent, equal, id, time, client, dates){
+async function Annuity(credit, percent, equal, id, time, client, dates, credits){
     let fact_percent, date, percents, this_equal
     let data = {
         message: [],
@@ -48,10 +48,10 @@ async function Annuity(credit, percent, equal, id, time, client, dates){
         // while (await testDate(dates)) {
         //     dates.setDate(dates.getDate() + 1)
         //     percents += (percent - 1) / 30
-        //     check += 1
         // }
-        // if (percent !== percents){
-        //     this_equal = null
+        // if (percent !== percents) {
+        //     this_equal = +(credits * ((percents - 1) / (1 - Math.pow(percents, -time)))).toFixed(2)
+        //     console.log(this_equal)
         // }
         date = dates.toISOString()
         fact_percent = +((credit * (percents - 1)).toFixed(2))
@@ -265,7 +265,7 @@ async function handlerpost(client, request){
     // console.log(dif)
     let payout = {message: []}
     if (id === null){
-        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
+        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date), credit)).message)
         payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
         payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
     } else if (typed === 'ann') {
