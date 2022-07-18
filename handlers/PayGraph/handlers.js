@@ -61,7 +61,7 @@ async function Annuity(credit, percent, equal, id, time, client, dates){
                     const query = {
                         text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
                                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                        values: [id, this_equal - fact_percent, (percent - 1) * 100, fact_percent, date],
+                        values: [id, this_equal - fact_percent, +(((percent-1)*1200).toFixed(2)), fact_percent, date],
                     }
                     await client.query(query)
                     data = {
@@ -126,7 +126,7 @@ async function Diff(credit, percent, dif, time, id, client, dates){
                 let query = {
                     text: `INSERT INTO differentiated (id, credit, percent_rate, date, accrued_percent)
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    values: [id, dif, +(((Math.pow(percent, 12) - 1)  * 100).toFixed()), date, fact_percent],
+                    values: [id, dif, +(((percent-1)*1200).toFixed(2)), date, fact_percent],
                 }
                 await client.query(query)
                 data = {
@@ -167,7 +167,7 @@ async function LastPay(credits, percent, time, id, client, dates){
                     const query = {
                         text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                        values: [id, credits, (percent - 1) * 100, fact_percent, date]
+                        values: [id, credits, +(((percent-1)*1200).toFixed(2)), fact_percent, date]
                     }
                     await client.query(query)
                 } else {
