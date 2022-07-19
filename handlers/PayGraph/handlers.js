@@ -36,161 +36,253 @@ async function Remainder(credit, time, data){
     return credits
 }
 
-async function Annuity(credit, percent, equal, id, time, client, dates, credits){
+async function Annuity(credit, percent, equal, id, times, client, datesS, credits){
     let fact_percent, date, percents, this_equal
     let data = {
         message: [],
     }
+    let time = times
+    let dates = new Date(datesS.getTime())
     for (let i = 1; i <= time; i++) {
-        this_equal = equal
-        dates.setMonth(dates.getMonth() + 1)
-        percents = percent
-        // while (await testDate(dates)) {
-        //     dates.setDate(dates.getDate() + 1)
-        //     percents += (percent - 1) / 30
-        // }
-        // if (percent !== percents) {
-        //     this_equal = +(credits * ((percents - 1) / (1 - Math.pow(percents, -time)))).toFixed(2)
-        //     console.log(this_equal)
-        // }
-        date = dates.toISOString()
-        fact_percent = +((credit * (percents - 1)).toFixed(2))
-        if (i < time) {
-            try {
+        datesS.setMonth(dates.getMonth() + 1)
+        datesS.setDate(dates.getDate())
+        if (times*24*60*60*1000 >= (datesS - dates)) {
+            this_equal = equal
+            dates.setMonth(dates.getMonth() + 1)
+            percents = percent
+            // while (await testDate(dates)) {
+            //     dates.setDate(dates.getDate() + 1)
+            //     percents += (percent - 1) / 30
+            // }
+            // if (percent !== percents) {
+            //     this_equal = +(credits * ((percents - 1) / (1 - Math.pow(percents, -time)))).toFixed(2)
+            //     console.log(this_equal)
+            // }
+            date = dates.toISOString()
+            fact_percent = +((credit * (percents - 1)).toFixed(2))
+            if (i < time) {
+                try {
+                    if (id !== null) {
+                        const query = {
+                            text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
+                                            VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                            values: [id, this_equal - fact_percent, +(((percent - 1) * 1200).toFixed(2)), fact_percent, date],
+                        }
+                        await client.query(query)
+                        data = {
+                            message: 'complete',
+                        }
+                    } else {
+                        data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent, date])
+                    }
+                } catch (err) {
+                }
+                credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
+            } else {
                 if (id !== null) {
+                    credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
                     const query = {
                         text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
                                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                        values: [id, this_equal - fact_percent, +(((percent-1)*1200).toFixed(2)), fact_percent, date],
+                        values: [id, this_equal - fact_percent + credit, (percent - 1) * 100, fact_percent - credit, date],
                     }
                     await client.query(query)
                     data = {
                         message: 'complete',
                     }
                 } else {
+                    // credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
+                    // data.message.push([this_equal - fact_percent, fact_percent , date], [credit, 0, date])
+                    // data.message.push([credit, +(equal-credit).toFixed(2), date])
+                    // credit = 0
+                    credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
                     data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent, date])
+                    while (credit !== 0) {
+                        credit = await Remainder(credit, time, data)
+                    }
                 }
-            } catch (err) {
             }
-            credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
+            // console.log(i)
+            let checkedChange
+            checkedChange = new Date(dates.getTime())
+            checkedChange.setMonth(checkedChange.getMonth() - 1)
+            times -= ((dates - checkedChange)/1000/60/60/24)
         } else {
-            if (id !== null) {
-                credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
+            let last = await LastPayOther(credit, percent, times, dates)
+            if (id === null){
+                data.message.push(last)
+                break
+            } else {
                 const query = {
                     text: `INSERT INTO annuity (id, credit, percent_rate, accrued_percent, date)
                                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    values: [id, this_equal - fact_percent + credit, (percent - 1) * 100, fact_percent - credit, date],
+                    values: [id, last[0], (percent - 1) * 100, last[1], last[2]],
                 }
                 await client.query(query)
                 data = {
                     message: 'complete',
                 }
-            } else {
-                // credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                // data.message.push([this_equal - fact_percent, fact_percent , date], [credit, 0, date])
-                // data.message.push([credit, +(equal-credit).toFixed(2), date])
-                // credit = 0
-                credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent, date])
-                while (credit !== 0) {
-                    credit = await Remainder(credit, time, data)
-                }
+                break
             }
         }
-        // console.log(i)
     }
     console.log(credit, ' ', fact_percent, ' ', this_equal, 'What?')
     return data
 }
 
-async function Diff(credit, percent, dif, time, id, client, dates){
+async function Diff(credit, percent, dif, times, id, client, datesS){
     let fact_percent, date, percents
     let data = {
         message: [],
     }
     let check = 0
+    let time = times
+    let dates = new Date(datesS.getTime())
     for (let i = 0; i < time; i++){
+        datesS.setMonth(dates.getMonth() + 1)
+        datesS.setDate(dates.getDate())
+        if (times*24*60*60*1000 >= (datesS - dates)) {
+            dates.setMonth(dates.getMonth() + 1)
+            percents = percent
 
-        dates.setMonth(dates.getMonth() + 1)
-        percents = percent
-
-        while (await testDate(dates)) {
-            dates.setDate(dates.getDate() + 1)
-            percents += +(((percent - 1) / 30).toFixed(3))
-            check += 1
-        }
-        date = dates.toISOString()
-        fact_percent = +((credit * (percents-1)).toFixed(2))
-        try {
-            if (id !== null) {
+            while (await testDate(dates)) {
+                dates.setDate(dates.getDate() + 1)
+                percents += +(((percent - 1) / 30).toFixed(3))
+                check += 1
+            }
+            date = dates.toISOString()
+            fact_percent = +((credit * (percents - 1)).toFixed(2))
+            try {
+                if (id !== null) {
+                    let query = {
+                        text: `INSERT INTO differentiated (id, credit, percent_rate, date, accrued_percent)
+                                        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                        values: [id, dif, +(((percent - 1) * 1200).toFixed(2)), date, fact_percent],
+                    }
+                    await client.query(query)
+                    data = {
+                        message: 'complete',
+                    }
+                } else {
+                    data.message.push([dif, fact_percent, date])
+                }
+            } catch (err) {
+            }
+            credit = +(credit - dif).toFixed(2)
+            // console.log(credit)
+            let checkedChange
+            checkedChange = new Date(dates.getTime())
+            checkedChange.setMonth(checkedChange.getMonth() - 1)
+            times -= ((dates - checkedChange)/1000/60/60/24)
+        } else {
+            let last = await LastPayOther(credit, percent, times, dates)
+            if (id === null){
+                data.message.push(last)
+                break
+            } else {
                 let query = {
                     text: `INSERT INTO differentiated (id, credit, percent_rate, date, accrued_percent)
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    values: [id, dif, +(((percent-1)*1200).toFixed(2)), date, fact_percent],
+                    values: [id, last[0], +(((percent - 1) * 1200).toFixed(2)), last[2], last[1]],
                 }
                 await client.query(query)
                 data = {
                     message: 'complete',
                 }
-            } else {
-                data.message.push([dif, fact_percent, date])
             }
-        } catch (err) {}
-        credit -= dif
-        // console.log(credit)
+        }
     }
     console.log(check)
     return data
 }
 
-async function LastPay(credits, percent, time, id, client, dates){
+async function LastPay(credits, percent, times, id, client, datesS){
     let date, percents, fact_percent
     let data = {
         message: [],
     }
     let credit = credits
+    let time = times
+    let dates = new Date(datesS.getTime())
     for (let i = 1; i <= time; i++){
+        datesS.setMonth(dates.getMonth() + 1)
+        datesS.setDate(dates.getDate())
+        if (times*24*60*60*1000 >= (datesS - dates)) {
+            dates.setMonth(dates.getMonth() + 1)
+            percents = percent
+            while (await testDate(dates)) {
+                dates.setDate(dates.getDate() + 1)
+                percents += +(((percent - 1) / 30).toFixed(3))
+            }
 
-        dates.setMonth(dates.getMonth() + 1)
-        percents = percent
-        while (await testDate(dates)) {
-            dates.setDate(dates.getDate() + 1)
-            percents += +(((percent - 1) / 30).toFixed(3) )
-        }
+            date = dates.toISOString()
+            fact_percent = +((credit * (percents - 1)).toFixed(2))
 
-        date = dates.toISOString()
-        fact_percent = +((credit * (percents-1)).toFixed(2))
-
-        try {
-            if (id !== null) {
-                if (i === time) {
-                    const query = {
-                        text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
+            try {
+                if (id !== null) {
+                    if (i === time) {
+                        const query = {
+                            text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
                                         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                        values: [id, credits, +(((percent-1)*1200).toFixed(2)), fact_percent, date]
+                            values: [id, credits, +(((percent - 1) * 1200).toFixed(2)), fact_percent, date]
+                        }
+                        await client.query(query)
+                    } else {
+                        const query = {
+                            text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
+                                        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                            values: [id, 0, (percent - 1) * 100, fact_percent, date]
+                        }
+                        await client.query(query)
+                        data = {
+                            message: 'complete',
+                        }
                     }
-                    await client.query(query)
+                } else if (i === time) {
+                    data.message.push([credits, fact_percent, date])
                 } else {
-                    const query = {
-                        text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
-                                        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                        values: [id, 0, (percent - 1) * 100, fact_percent, date]
-                    }
-                    await client.query(query)
+                    data.message.push([0, fact_percent, date])
                 }
-
+            } catch (err) {
+                console.log(err)
+            }
+            credit += fact_percent
+            let checkedChange
+            checkedChange = new Date(dates.getTime())
+            checkedChange.setMonth(checkedChange.getMonth() - 1)
+            times -= ((dates - checkedChange)/1000/60/60/24)
+        } else {
+            let last = await LastPayOther(credit, percent, times, dates)
+            last[0] = credits
+            if (id === null){
+                data.message.push(last)
+                break
+            } else {
+                const query = {
+                    text: `INSERT INTO lastmonthpay (id, credit, percent_rate, accrued_percent, date)
+                                        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                    values: [id, credits, (percent - 1) * 100, last[1], last[2]]
+                }
+                await client.query(query)
                 data = {
                     message: 'complete',
                 }
-            } else if (i === time){
-                data.message.push([credits, fact_percent, date])
-            } else {
-                data.message.push([0, fact_percent, date])
             }
-        } catch (err){console.log(err)}
-        credit += fact_percent
+        }
     }
     return data
+}
+
+async function LastPayOther(credits, percent, time, dates){
+    let credit = credits
+    percent = Math.pow(percent, (1/30))
+    console.log(credit)
+    for (let i = 0; i < time; i++){
+        credit = +(credit*percent).toFixed(2)
+        dates.setDate(dates.getDate() + 1)
+    }
+    console.log(credit)
+    return [credits, +(credit- credits).toFixed(2), dates]
 }
 
 async function handlerget1(client, id){
@@ -259,9 +351,9 @@ async function handlerpost(client, request){
     // let equal = +((credit * (((work_percent - 1) * Math.pow(work_percent,time).toFixed(3)) / (Math.pow(work_percent, time).toFixed(3)- 1))).toFixed(2))
     // console.log(equal)
     let work_percent = +(percent / (100 * 12)).toFixed(3)
-    let equal = +(credit * (work_percent / (1 - Math.pow(1 + work_percent, -time)))).toFixed(2)
+    let equal = +(credit * (work_percent / (1 - Math.pow(1 + work_percent, -Math.ceil(time/30.5))))).toFixed(2)
     work_percent++
-    let dif = +((credit / time).toFixed(2))
+    let dif = +((credit / Math.ceil(time/30.5)).toFixed(2))
     // console.log(dif)
     let payout = {message: []}
     if (id === null){
