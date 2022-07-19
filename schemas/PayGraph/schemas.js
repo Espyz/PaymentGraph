@@ -46,16 +46,6 @@ const postGraph = {
         }
     },
     response: {
-        200: {
-            type: 'object',
-            properties: {
-                // ann: {type: 'array'},
-                // dif: {type: 'array'},
-                // last:{type: 'array'},
-                message: {type: 'array'},
-                statusCode: {type: 'integer'}
-            }
-        },
         302:{
             type: 'object',
             properties: {

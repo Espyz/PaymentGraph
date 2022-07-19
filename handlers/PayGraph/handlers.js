@@ -1,3 +1,5 @@
+const ExcelJS = require('exceljs')
+
 async function testDate(date){
     return date.getDay() === 0 || date.getDay() === 6 || ((date.getDate() === 1 || date.getDate() === 2 || date.getDate() === 3 || date.getDate() === 4 || date.getDate() === 5 || date.getDate() === 7)
         && date.getMonth() === 1) || (date.getDate() === 23 && date.getMonth() === 2) || (date.getDate() === 8 && date.getMonth() === 3) || ((date.getDate() === 1 || date.getDate() === 9) &&
@@ -282,7 +284,7 @@ async function LastPayOther(credits, percent, time, dates){
         dates.setDate(dates.getDate() + 1)
     }
     console.log(credit)
-    return [credits, +(credit- credits).toFixed(2), dates]
+    return [credits, +(credit- credits).toFixed(2), dates.toISOString()]
 }
 
 async function handlerget1(client, id){
@@ -377,9 +379,37 @@ async function handlerpost(client, request){
         payout.statusCode = 400
     }
     // console.log(payout)
+    const workbook = new ExcelJS.Workbook()
+    const sheet1 = workbook.addWorksheet('Annuity')
+    const sheet2 = workbook.addWorksheet('Different')
+    const sheet3 = workbook.addWorksheet('LastMonthPay')
+    sheet1.columns = [{header: 'Основной долг', key: 'credit', width : 100},
+                      {header: 'Начисленные проценты', key: 'percent', width : 100},
+                      {header: 'Дата', key: 'date', width : 100}]
 
+    sheet2.columns = [{header: 'Основной долг', key: 'credit', width : 100},
+                      {header: 'Начисленные проценты', key: 'percent', width : 100},
+                      {header: 'Дата', key: 'date', width : 100}]
+
+    sheet3.columns = [{header: 'Основной долг', key: 'credit', width : 100},
+                      {header: 'Начисленные проценты', key: 'percent', width : 100},
+                      {header: 'Дата', key: 'date', width : 100}]
+
+    for (let i = 0; i < Math.ceil(time / 30.5); i++){
+        console.log(payout.message[0][i])
+        sheet1.addRow(payout.message[0][i]).commit()
+        sheet2.addRow(payout.message[1][i]).commit()
+        sheet3.addRow(payout.message[2][i]).commit()
+    }
+    payout.buffer =  await workbook.xlsx.writeBuffer()
+    console.log(payout.buffer)
     return payout
 }
+//
+// async function getExcel(client, id) {
+//
+// }
+
 
 module.exports = {
     handlerget1: handlerget1,
