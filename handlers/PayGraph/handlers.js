@@ -8,7 +8,6 @@ async function testDate(date){
 
 async function Remainder(credit, time, data){
     let credits = credit
-    // console.log(credit)
     if (credits > 0) {
         if (credit * 100 > time) {
             for (let i = 0; i < time; i++) {
@@ -57,7 +56,6 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
             // }
             // if (percent !== percents) {
             //     this_equal = +(credits * ((percents - 1) / (1 - Math.pow(percents, -time)))).toFixed(2)
-            //     console.log(this_equal)
             // }
             date = dates.toISOString()
             fact_percent = +((credit * (percents - 1)).toFixed(2))
@@ -103,7 +101,6 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
                     }
                 }
             }
-            // console.log(i)
             let checkedChange
             checkedChange = new Date(dates.getTime())
             checkedChange.setMonth(checkedChange.getMonth() - 1)
@@ -127,7 +124,6 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
             }
         }
     }
-    console.log(credit, ' ', fact_percent, ' ', this_equal, 'What?')
     return data
 }
 
@@ -170,7 +166,6 @@ async function Diff(credit, percent, dif, times, id, client, datesS){
             } catch (err) {
             }
             credit = +(credit - dif).toFixed(2)
-            // console.log(credit)
             let checkedChange
             checkedChange = new Date(dates.getTime())
             checkedChange.setMonth(checkedChange.getMonth() - 1)
@@ -193,7 +188,6 @@ async function Diff(credit, percent, dif, times, id, client, datesS){
             }
         }
     }
-    console.log(check)
     return data
 }
 
@@ -244,9 +238,7 @@ async function LastPay(credits, percent, times, id, client, datesS){
                 } else {
                     data.message.push([0, fact_percent, date])
                 }
-            } catch (err) {
-                console.log(err)
-            }
+            } catch (err) {}
             credit += fact_percent
             let checkedChange
             checkedChange = new Date(dates.getTime())
@@ -277,12 +269,10 @@ async function LastPay(credits, percent, times, id, client, datesS){
 async function LastPayOther(credits, percent, time, dates){
     let credit = credits
     percent = Math.pow(percent, (1/30))
-    console.log(credit)
     for (let i = 0; i < time; i++){
         credit = +(credit*percent).toFixed(2)
         dates.setDate(dates.getDate() + 1)
     }
-    console.log(credit)
     return [credits, +(credit- credits).toFixed(2), dates.toISOString()]
 }
 
@@ -291,10 +281,8 @@ async function handlerget1(client, id){
         message: 'Error',
         statusCode: 400
     }
-    // console.log(id)
     try {
         const {rows} = await client.query(`SELECT credit, accrued_percent, date FROM annuity WHERE id = '${String(id)}'`)
-        // console.log(rows)
         data = {
             message: rows,
             statusCode: 200,
@@ -312,7 +300,6 @@ async function handlerget2(client, id){
     }
     try {
         const {rows} = await client.query(`SELECT credit, accrued_percent, date FROM differentiated WHERE id = '${String(id)}'`)
-        // console.log(rows)
         data = {
             message: rows,
             statusCode: 200,
@@ -330,7 +317,6 @@ async function handlerget3(client, id){
     }
     try {
         const {rows} = await client.query(`SELECT credit, accrued_percent, date FROM lastmonthpay WHERE id = '${String(id)}'`)
-        // console.log(rows)
         data = {
             message: rows,
             statusCode: 200,
@@ -343,19 +329,15 @@ async function handlerget3(client, id){
 
 async function handlerpost(client, request){
     const {credit, percent, time, credit_date, typed, id} = request.body
-    // console.log({credit, percent, time, credit_date, typed, id})
     // let work_percent = +(Math.pow((1+ percent/100), (1/12)).toFixed(3))
     // let work_percent = 1 + (+percent/12/100)
     // let equal = Math.round((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
-    // console.log(work_percent)
     // let equal = Math.ceil(((((1+(percent/100))**(1/12))**time) / (((1+(percent/100))**(1/12))**time - 1)) * (((1+(percent/100))**(1/12)) - 1) * credit)
     // let equal = +((credit * (((work_percent - 1) * Math.pow(work_percent,time).toFixed(3)) / (Math.pow(work_percent, time).toFixed(3)- 1))).toFixed(2))
-    // console.log(equal)
     let work_percent = +(percent / (100 * 12)).toFixed(3)
     let equal = +(credit * (work_percent / (1 - Math.pow(1 + work_percent, -Math.ceil(time/30.5))))).toFixed(2)
     work_percent++
     let dif = +((credit / Math.ceil(time/30.5)).toFixed(2))
-    // console.log(dif)
     let payout = {message: []}
     if (id === null){
         payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date), credit)).message)
@@ -377,7 +359,6 @@ async function handlerpost(client, request){
     } else {
         payout.statusCode = 400
     }
-    // console.log(payout)
     const workbook = new ExcelJS.Workbook()
     const sheet1 = workbook.addWorksheet('Annuity')
     const sheet2 = workbook.addWorksheet('Different')
@@ -395,13 +376,11 @@ async function handlerpost(client, request){
                       {header: 'Дата', key: 'date', width : 100}]
 
     for (let i = 0; i < Math.ceil(time / 30.5); i++){
-        console.log(payout.message[0][i])
         sheet1.addRow(payout.message[0][i]).commit()
         sheet2.addRow(payout.message[1][i]).commit()
         sheet3.addRow(payout.message[2][i]).commit()
     }
     payout.buffer =  await workbook.xlsx.writeBuffer()
-    console.log(payout.buffer)
     return payout
 }
 //
