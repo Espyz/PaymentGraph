@@ -10,7 +10,7 @@ async function Remainder(credit, time, data){
     let credits = credit
     if (credits > 0) {
         if (credit * 100 > time) {
-            for (let i = 0; i < time; i++) {
+            for (let i = 0; i < Math.ceil(time/30.5); i++) {
                 credits = +(+credits - 0.01).toFixed(2)
                 data.message[i][0] = +(data.message[i][0] + 0.01).toFixed(2)
             }
@@ -21,15 +21,19 @@ async function Remainder(credit, time, data){
             }
         }
     } else {
-        if ( -(credit * 100) > time) {
-            for (let i = time - 1; i >= 0; i--) {
-                credits = +(+credits + 0.01).toFixed(2)
-                data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
+        if (-(credit * 100) > time) {
+            for (let i = Math.ceil(time/30.5) - 1; i >= 0; i--) {
+                try {
+                    credits = +(+credits + 0.01).toFixed(2)
+                    data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
+                } catch (err){console.log(i)}
             }
         } else {
             for (let i = ((-(credit * 100)) - 1).toFixed(); i >= 0; i--) {
-                credits = +(+credits + 0.01).toFixed(2)
-                data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
+                try {
+                    credits = +(+credits + 0.01).toFixed(2)
+                    data.message[i][0] = +(data.message[i][0] - 0.01).toFixed(2)
+                } catch(err) {console.log('this')}
             }
         }
     }
@@ -43,10 +47,12 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
     }
     let time = times
     let dates = new Date(datesS.getTime())
+    let j = 0
     for (let i = 1; i <= time; i++) {
         datesS.setMonth(dates.getMonth() + 1)
         datesS.setDate(dates.getDate())
-        if (times*24*60*60*1000 >= (datesS - dates)) {
+        let L = times*24*60*60*1000 >= (datesS - dates)
+        if (L || credit < Math.ceil(equal/2)) {
             this_equal = equal
             dates.setMonth(dates.getMonth() + 1)
             percents = percent
@@ -59,7 +65,7 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
             // }
             date = dates.toISOString()
             fact_percent = +((credit * (percents - 1)).toFixed(2))
-            if (i < time) {
+            if (L) {
                 try {
                     if (id !== null) {
                         const query = {
@@ -90,15 +96,10 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
                         message: 'complete',
                     }
                 } else {
-                    // credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                    // data.message.push([this_equal - fact_percent, fact_percent , date], [credit, 0, date])
-                    // data.message.push([credit, +(equal-credit).toFixed(2), date])
-                    // credit = 0
-                    credit = +((+((credit * percents).toFixed(2)) - this_equal).toFixed(2))
-                    data.message.push([+(this_equal - fact_percent).toFixed(2), fact_percent, date])
                     while (credit !== 0) {
                         credit = await Remainder(credit, time, data)
                     }
+                    break
                 }
             }
             let checkedChange
@@ -106,7 +107,7 @@ async function Annuity(credit, percent, equal, id, times, client, datesS, credit
             checkedChange.setMonth(checkedChange.getMonth() - 1)
             times -= ((dates - checkedChange)/1000/60/60/24)
         } else {
-            let last = await LastPayOther(credit, percent, times, dates)
+            let last = await LastPayOther(credit, percent, times, dates, 'ann')
             if (id === null){
                 data.message.push(last)
                 break
@@ -171,7 +172,7 @@ async function Diff(credit, percent, dif, times, id, client, datesS){
             checkedChange.setMonth(checkedChange.getMonth() - 1)
             times -= ((dates - checkedChange)/1000/60/60/24)
         } else {
-            let last = await LastPayOther(credit, percent, times, dates)
+            let last = await LastPayOther(credit, percent, times, dates, 'diff')
             if (id === null){
                 data.message.push(last)
                 break
@@ -235,17 +236,18 @@ async function LastPay(credits, percent, times, id, client, datesS){
                     }
                 } else if (i === time) {
                     data.message.push([credits, fact_percent, date])
+                    break
                 } else {
                     data.message.push([0, fact_percent, date])
                 }
-            } catch (err) {}
-            credit += fact_percent
+            } catch (err) {console.log('error in LastPay')}
+            credit = +(credit + fact_percent).toFixed(2)
             let checkedChange
             checkedChange = new Date(dates.getTime())
             checkedChange.setMonth(checkedChange.getMonth() - 1)
             times -= ((dates - checkedChange)/1000/60/60/24)
         } else {
-            let last = await LastPayOther(credit, percent, times, dates)
+            let last = await LastPayOther(credit, percent, times, dates, 'last')
             last[0] = credits
             if (id === null){
                 data.message.push(last)
@@ -260,19 +262,21 @@ async function LastPay(credits, percent, times, id, client, datesS){
                 data = {
                     message: 'complete',
                 }
+                break
             }
         }
     }
     return data
 }
 
-async function LastPayOther(credits, percent, time, dates){
+async function LastPayOther(credits, percent, time, dates, ty){
     let credit = credits
     percent = Math.pow(percent, (1/30))
     for (let i = 0; i < time; i++){
         credit = +(credit*percent).toFixed(2)
         dates.setDate(dates.getDate() + 1)
     }
+    console.log(credits, percent, ty)
     return [credits, +(credit- credits).toFixed(2), dates.toISOString()]
 }
 
@@ -334,21 +338,31 @@ async function handlerpost(client, request){
     // let equal = Math.round((credit * ((work_percent ** time) * (percent/100)) / (work_percent ** time - 1)) / 12)
     // let equal = Math.ceil(((((1+(percent/100))**(1/12))**time) / (((1+(percent/100))**(1/12))**time - 1)) * (((1+(percent/100))**(1/12)) - 1) * credit)
     // let equal = +((credit * (((work_percent - 1) * Math.pow(work_percent,time).toFixed(3)) / (Math.pow(work_percent, time).toFixed(3)- 1))).toFixed(2))
+    let test_month_count = new Date(+credit_date)
+    let date = new Date(+credit_date)
+    test_month_count.setDate(test_month_count.getDate()+time)
+    let years = test_month_count.getFullYear() - date.getFullYear()
+    let month = test_month_count.getMonth() - date.getMonth()
+    let month_count = years*12 + month
+    console.log(month_count)
+    if (month_count === 0){
+        month_count = 1
+    }
     let work_percent = +(percent / (100 * 12)).toFixed(3)
-    let equal = +(credit * (work_percent / (1 - Math.pow(1 + work_percent, -Math.ceil(time/30.5))))).toFixed(2)
+    let equal = +(credit * (work_percent / (1 - Math.pow(1 + work_percent, -month_count)))).toFixed(2)
     work_percent++
-    let dif = +((credit / Math.ceil(time/30.5)).toFixed(2))
+    let dif = +((credit / month_count).toFixed(2))
     let payout = {message: []}
     if (id === null){
-        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date), credit)).message)
-        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
-        payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
+        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, date, credit)).message)
+        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, date)).message)
+        payout.message.push((await LastPay(credit, work_percent, time, id, client, date)).message)
     } else if (typed === 'ann') {
-        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, new Date(+credit_date))).message)
+        payout.message.push((await Annuity(credit, work_percent, equal, id, time, client, date)).message)
     } else if (typed === 'dif'){
-        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, new Date(+credit_date))).message)
+        payout.message.push((await Diff(credit, work_percent, dif, time, id, client, date)).message)
     } else if (typed === 'last'){
-        payout.message.push((await LastPay(credit, work_percent, time, id, client, new Date(+credit_date))).message)
+        payout.message.push((await LastPay(credit, work_percent, time, id, client, date)).message)
     } else{
         payout.message.push('Payment type not selected')
     }
@@ -383,10 +397,6 @@ async function handlerpost(client, request){
     payout.buffer =  await workbook.xlsx.writeBuffer()
     return payout
 }
-//
-// async function getExcel(client, id) {
-//
-// }
 
 
 module.exports = {
