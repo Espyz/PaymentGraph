@@ -15,7 +15,7 @@ fastify.register(payRoute)
 
 async function start() {
   try{
-    await fastify.listen({port:3001, host:'::'})
+    await fastify.listen({port:3000, host:'::'})
   } catch(err) {
     fastify.log.error(err)
     process.exit(1)
